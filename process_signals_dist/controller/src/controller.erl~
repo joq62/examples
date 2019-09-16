@@ -1,0 +1,125 @@
+%%% -------------------------------------------------------------------
+%%% Author  : Joq Erlang
+%%% Description : test application calc
+%%%  
+%%% Created : 10 dec 2012
+%%% -------------------------------------------------------------------
+-module(adder).
+
+%% --------------------------------------------------------------------
+%% Include files
+%% --------------------------------------------------------------------
+%-include("interfacesrc/brd_local.hrl").
+
+%% --------------------------------------------------------------------
+ 
+%% --------------------------------------------------------------------
+%% Key Data structures
+%% 
+%% --------------------------------------------------------------------
+-record(state,{}).
+
+%% --------------------------------------------------------------------
+
+%% ====================================================================
+%% External functions
+%% ====================================================================
+
+
+-export([start/1
+	 ]).
+
+
+
+
+%% ====================================================================
+%% External functions
+%% ====================================================================
+
+
+%%-----------------------------------------------------------------------
+
+
+%% ====================================================================
+%% Server functions
+%% ====================================================================
+
+%% --------------------------------------------------------------------
+%% Function: init/1
+%% Description: Initiates the server
+%% Returns: {ok, State}          |
+%%          {ok, State, Timeout} |
+%%          ignore               |
+%%          {stop, Reason}
+%
+%% --------------------------------------------------------------------
+start([])->
+    {ok,State}=init([]),
+    Pid=spawn(fun()->loop(State) end ),
+    Pid.
+
+init([])->
+    {ok,#state{}}.
+%% --------------------------------------------------------------------
+%%% Internal functions
+%% --------------------------------------------------------------------
+
+%% --------------------------------------------------------------------
+%% Internal functions
+%% --------------------------------------------------------------------
+loop(State)->    
+    receive
+	% Normal cases
+	{From,{MsgId,reply,add,[A,B]}}->
+	    R=rpc:call(node(),adder_lib,add,[A,B]),
+	    From!{self(),{MsgId,R}},
+	    NewState=State,
+	    loop(NewState);
+	{From,{MsgId,reply,add,[A,B],TimeOut}}->
+	    R=rpc:call(node(),adder_lib,add,[A,B],TimeOut),
+	    From!{self(),{MsgId,R}},
+	    NewState=State,
+	    loop(NewState);
+	{From,{MsgId,reply,divi,[A,B]}}->
+	    R=rpc:call(node(),adder_lib,divi,[A,B]),
+	    From!{self(),{MsgId,R}},
+	    NewState=State,
+	    loop(NewState);
+	{From,{MsgId,reply,divi,[A,B],TimeOut}}->
+	    R=rpc:call(node(),adder_lib,divi,[A,B],TimeOut),
+	    From!{self(),{MsgId,R}},
+	    NewState=State,
+	    loop(NewState);
+	{From,{MsgId,reply,divi2,[A,B]}}->
+	    R=A/B,
+	    From!{self(),{MsgId,R}},
+	    NewState=State,
+	    loop(NewState);
+
+	% Control functions mandatory 
+	{From,{MsgId,reply,stop}} ->
+	    From!{self(),{MsgId,stopped_normal}};
+	{From,{MsgId,noreply,stop}} ->
+	    From!{self(),{MsgId,stopped_normal}};
+	{From,X}->
+	    From!{self(),{error,unmatched_signal,X}},
+	    NewState=State,
+	    loop(NewState);
+	Z->
+	    io:format("should be error log ~p~n",[{?MODULE,?LINE,Z}]),
+	    NewState=State,
+	    loop(NewState)
+    end.
+    
+%% --------------------------------------------------------------------
+%% Function: 
+%% Description:
+%% Returns: non
+%% --------------------------------------------------------------------
+
+%% --------------------------------------------------------------------
+%% Function: 
+%% Description:
+%% Returns: non
+%% --------------------------------------------------------------------
+
